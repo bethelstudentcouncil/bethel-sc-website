@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Bethel SC Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="js/supabase-client.js"></script>
+<style>
+:root{--deep:#0A2251;--royal:#163C82;--gold:#C7A24A;--gold2:#E7CE86;--ivory:#FBF8F1;--mist:#EEF1F8;--ink:#10162A;--line:#DCD2AE;--danger:#b33a3a;--ok:#26734d}*{box-sizing:border-box}body{margin:0;background:#f5f6fa;color:var(--ink);font-family:Inter,system-ui,sans-serif}.hidden{display:none!important}.login{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,var(--deep),var(--royal))}.login-card{width:min(460px,100%);background:var(--ivory);border-radius:24px;padding:36px;box-shadow:0 30px 80px #0005}.brand{font-family:Fraunces,serif;font-size:30px;color:var(--deep);margin:0 0 6px}.eyebrow{font:11px 'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}.muted{color:#6b7280;font-size:13px;line-height:1.5}.field{margin:16px 0}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:7px}.field input,.field textarea,.field select{width:100%;padding:12px 13px;border:1px solid #ccd1dd;border-radius:10px;background:white;font:14px Inter,sans-serif}.field textarea{min-height:110px;resize:vertical}.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}.primary{background:var(--royal);color:white}.gold{background:var(--gold);color:var(--deep)}.ghost{background:#eef1f8;color:var(--deep)}.danger{background:#fff0f0;color:var(--danger);border:1px solid #f0c5c5}.app{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:250px;background:var(--deep);color:white;padding:24px 16px;z-index:20}.side-title{font:23px Fraunces,serif;padding:0 10px 22px}.side-sub{font:10px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;padding:0 10px 15px}.nav{display:grid;gap:5px}.nav button{width:100%;text-align:left;background:transparent;color:#dbe4f7;border:0;border-radius:9px;padding:11px 12px;cursor:pointer;font-size:13px}.nav button.active,.nav button:hover{background:#ffffff14;color:white}.sidebar-bottom{position:absolute;bottom:18px;left:16px;right:16px;display:grid;gap:8px}.main{margin-left:250px;padding:28px;max-width:1400px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:24px}.topbar h1{font:38px Fraunces,serif;color:var(--deep);margin:0}.top-actions{display:flex;gap:8px;flex-wrap:wrap}.panel{background:white;border:1px solid #e1e5ed;border-radius:18px;padding:24px;margin-bottom:18px;box-shadow:0 8px 30px #0a22510b}.panel h2{font:24px Fraunces,serif;color:var(--deep);margin:0 0 6px}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px}.list{display:grid;gap:12px}.item{border:1px solid #e0e4ec;border-radius:13px;padding:15px;background:#fbfcff}.item-head{display:flex;justify-content:space-between;gap:10px;align-items:center}.item-title{font-weight:700;color:var(--deep)}.item-actions{display:flex;gap:6px;flex-wrap:wrap}.item-actions button{padding:7px 9px;border-radius:8px;border:0;cursor:pointer}.drop{border:2px dashed #c9d0df;border-radius:12px;padding:18px;text-align:center;background:#fafbfe}.drop input{margin-top:10px}.preview{max-height:180px;max-width:100%;object-fit:cover;border-radius:10px;margin-top:10px}.toast{position:fixed;right:24px;bottom:24px;background:var(--deep);color:white;padding:12px 16px;border-radius:10px;z-index:50;box-shadow:0 12px 30px #0003}.status{font:11px 'IBM Plex Mono',monospace;color:#657083}.section{display:none}.section.active{display:block}.notice{background:#fff8e5;border:1px solid #efd78b;border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.5}.ok{background:#effaf4;border:1px solid #b9e3ca;color:#216a47;border-radius:12px;padding:12px 14px;font-size:12px}.error{background:#fff0f0;border:1px solid #efc1c1;color:#9a3030;border-radius:12px;padding:12px 14px;font-size:12px}.checkbox{display:flex;align-items:center;gap:8px;font-size:13px;margin:12px 0}.small{font-size:11px}.userbox{padding:12px;background:#ffffff10;border-radius:10px;font-size:11px;color:#cfdaf0;line-height:1.5}.mobile-nav{display:none}
+@media(max-width:800px){.sidebar{display:none}.main{margin-left:0;padding:18px}.mobile-nav{display:flex;position:sticky;top:0;z-index:19;background:var(--deep);color:white;padding:12px;gap:8px;overflow:auto}.mobile-nav button{background:#ffffff12;color:white;border:0;border-radius:8px;padding:8px 10px;white-space:nowrap}.grid2{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}.topbar h1{font-size:31px}}
+</style>
+</head>
+<body>
+<div id="login" class="login">
+  <div class="login-card">
+    <div class="eyebrow">Bethel International School</div>
+    <h1 class="brand">Student Council Admin</h1>
+    <p class="muted">Sign in with the SC website owner's email. This page is backed by Supabase Authentication; the old prototype password is no longer used.</p>
+    <div id="loginMsg"></div>
+    <form id="loginForm">
+      <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username" required></div>
+      <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn primary" style="width:100%">Sign in</button>
+    </form>
+  </div>
+</div>
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="side-sub">Student Council</div>
+    <div class="side-title">Bethel Website</div>
+    <div id="sideUser" class="userbox"></div>
+    <nav class="nav" id="sideNav"></nav>
+    <div class="sidebar-bottom"><a class="btn gold" href="index.html" target="_blank">View Live Site</a><button id="logoutBtn" class="btn ghost">Log out</button></div>
+  </aside>
+  <div class="mobile-nav" id="mobileNav"></div>
+  <main class="main">
+    <div class="topbar"><div><div class="eyebrow">Content Management</div><h1 id="title">Dashboard</h1></div><div class="top-actions"><span id="status" class="status"></span><button class="btn gold" id="publishBtn">Publish Changes</button></div></div>
+    <div id="message"></div>
+    <div id="sections"></div>
+  </main>
+</div>
+<script>
+const NAV=[['hero','Hero'],['missionVision','Mission & Vision'],['news','News'],['events','Events'],['gallery','Gallery'],['testimonials','Testimonials'],['programs','Programs'],['officers','Officers'],['contact','Contact'],['admins','Admin Access']];
+let current='hero'; let content=null; let undoStack={}; let user=null;
+const client=window.bethelSupabase;
+function q(s){return document.querySelector(s)}
+function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function toast(msg,ok=false){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2600)}
+function showMessage(text,type='notice'){q('#message').innerHTML=`<div class="${type}">${esc(text)}</div>`}
+function hideMessage(){q('#message').innerHTML=''}
+function field(label,key,val,type='text',extra=''){return `<div class="field"><label>${esc(label)}</label>${type==='textarea'?`<textarea data-key="${key}" ${extra}>${esc(val||'')}</textarea>`:`<input data-key="${key}" type="${type}" value="${esc(val||'')}" ${extra}>`}</div>`}
+function imageField(label,key,val){return `<div class="field"><label>${esc(label)}</label><div class="drop"><div>Drop an image here or choose a file</div><input data-image-input="${key}" type="file" accept="image/*"><input type="hidden" data-image-value="${key}" value="${esc(val||'')}">${val?`<img class="preview" data-preview="${key}" src="${esc(val)}">`:`<img class="preview hidden" data-preview="${key}">`}</div></div>`}
+function clone(x){return JSON.parse(JSON.stringify(x));}
+async function ensureAdmin(){
+  if(!client) throw new Error('Supabase client is not configured. Open config.js and add the Project URL + Publishable key.');
+  const {data:{user:u}}=await client.auth.getUser(); user=u; if(!u) return false;
+  const {data, error}=await client.from('admin_users').select('user_id,email').eq('user_id',u.id).maybeSingle();
+  if(error) throw error; return !!data;
+}
+async function loadContent(){
+  const {data,error}=await client.from('site_content').select('draft,published,updated_at,published_at,updated_by,published_by').eq('id',1).single();
+  if(error) throw error; content=data.draft||data.published||defaultContent();
+  q('#status').textContent=data.published_at?`Last published: ${new Date(data.published_at).toLocaleString()}`:'Not published yet';
+}
+function defaultContent(){return {hero:{headline:'Bethel International School',subtext:'Student Council Website',backgroundPhoto:''},missionVision:{mission:'',vision:''},contact:{phone:'',email:'bethelstudentcouncilsy24@gmail.com',address:'',facebook:'',instagram:''},programs:[],news:[],events:[],gallery:[],testimonials:[],officers:[]}}
+async function saveDraft(){
+  const {data:{user:u}}=await client.auth.getUser();
+  const {error}=await client.from('site_content').update({draft:content,updated_at:new Date().toISOString(),updated_by:u.id}).eq('id',1);
+  if(error) throw error; toast('Draft saved');
+}
+async function publish(){
+  const {data:{user:u}}=await client.auth.getUser();
+  const now=new Date().toISOString();
+  const {error}=await client.from('site_content').update({published:content,draft:content,updated_at:now,published_at:now,updated_by:u.id,published_by:u.id}).eq('id',1);
+  if(error) throw error; q('#status').textContent='Published: '+new Date(now).toLocaleString(); toast('Changes are live');
+}
+function menu(){const side=q('#sideNav'),mobile=q('#mobileNav'); const buttons=NAV.map(([id,label])=>`<button data-nav="${id}">${label}</button>`).join(''); side.innerHTML=buttons; mobile.innerHTML=buttons; document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>showSection(b.dataset.nav));}
+function showSection(id){current=id;document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===id));q('#title').textContent=NAV.find(x=>x[0]===id)?.[1]||'Dashboard';q('#sections').innerHTML=render(id);wireSection(id);}
+function render(id){
+ if(id==='hero') return `<div class="panel"><h2>Hero Section</h2><p class="muted">Edit the public hero without touching the page design.</p>${field('Headline','headline',content.hero.headline)}${field('Subtext / Motto','subtext',content.hero.subtext)}${imageField('Background Photo','hero-background',content.hero.backgroundPhoto)}<button class="btn primary" data-save="hero">Save Section</button></div>`;
+ if(id==='missionVision') return `<div class="panel"><h2>Mission & Vision</h2>${field('Mission','mission',content.missionVision.mission,'textarea')}${field('Vision','vision',content.missionVision.vision,'textarea')}<button class="btn primary" data-save="missionVision">Save Section</button></div>`;
+ if(id==='contact') return `<div class="panel"><h2>Contact Information</h2>${field('Phone','phone',content.contact.phone)}${field('Email','email',content.contact.email,'email')}${field('Address','address',content.contact.address)}${field('Facebook link','facebook',content.contact.facebook)}${field('Instagram link','instagram',content.contact.instagram)}<button class="btn primary" data-save="contact">Save Section</button></div>`;
+ if(id==='admins') return `<div class="panel"><h2>Admin Access</h2><p class="muted">To give another person access, create their user in Supabase Authentication first, then add their Auth User ID to the <code>admin_users</code> table. This avoids putting passwords in the website code.</p><div class="notice"><b>Your current account:</b> ${esc(user?.email||'')}<br><br><b>Important:</b> Never share a Supabase secret/service-role key. Other admins should get their own login.</div><div style="margin-top:16px"><a class="btn ghost" href="https://supabase.com/dashboard" target="_blank" rel="noopener">Open Supabase Dashboard</a></div></div>`;
+ return listEditor(id);
+}
+function listEditor(id){const arr=content[id]||[]; const labels={news:'News & Announcements',events:'Upcoming Events',gallery:'Photo Gallery',testimonials:'Testimonials',programs:'Programs',officers:'Student Council Officers'}; return `<div class="panel"><div class="panel-head"><div><h2>${labels[id]}</h2><div class="muted">Add, edit, reorder, publish/unpublish, or delete items.</div></div><button class="btn gold" data-add="${id}">+ Add</button></div><div class="list">${arr.map((item,i)=>`<div class="item"><div class="item-head"><div><div class="item-title">${esc(item.title||item.name||item.label||item.position||'Untitled')}</div><span class="status">${esc(item.category||item.tag||item.role||'Entry')}</span></div><div class="item-actions"><button class="ghost" data-move="${id}:${i}:-1">↑</button><button class="ghost" data-move="${id}:${i}:1">↓</button><button class="ghost" data-edit="${id}:${i}">Edit</button><button class="danger" data-delete="${id}:${i}">Delete</button></div></div><div id="edit-${id}-${i}" class="hidden" style="margin-top:14px">${formFor(id,item,i)}</div></div>`).join('')}</div></div>`}
+function formFor(id,x,i){
+ if(id==='programs') return `${field('Program name','name',x.name)}${field('Description','description',x.description||x.blurb||'','textarea')}<div class="field"><label>Icon</label><select data-key="icon"><option ${x.icon==='heart'?'selected':''}>heart</option><option ${x.icon==='book'?'selected':''}>book</option><option ${x.icon==='school'?'selected':''}>school</option><option ${x.icon==='cap'?'selected':''}>cap</option><option ${x.icon==='trophy'?'selected':''}>trophy</option></select></div><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+ if(id==='news') return `<div class="grid2">${field('Category','tag',x.tag||'News')}${field('Date','date',x.date||'')}</div>${field('Title','title',x.title)}${field('Excerpt','excerpt',x.excerpt||'','textarea')}${field('Full Body','fullBody',x.fullBody||'','textarea')}${imageField('Cover image','coverImage',x.coverImage)}<label class="checkbox"><input data-key="published" type="checkbox" ${x.published!==false?'checked':''}> Published</label><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+ if(id==='events') return `<div class="grid2">${field('Event name','name',x.name||x.title)}${field('Date','date',x.date||'','date')}</div><div class="grid2">${field('Time','time',x.time)}${field('Venue','venue',x.venue)}</div>${field('Registration link','registrationLink',x.registrationLink||'')}<label class="checkbox"><input data-key="published" type="checkbox" ${x.published!==false?'checked':''}> Published</label><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+ if(id==='gallery') return `${field('Caption','label',x.label||x.caption||'')}<div class="field"><label>Category</label><select data-key="category">${['Campus','Intramurals','Student Council','Graduation','Outreach','Clubs'].map(c=>`<option ${x.category===c?'selected':''}>${c}</option>`).join('')}</select></div>${imageField('Photo','photo',x.photo)}<label class="checkbox"><input data-key="tall" type="checkbox" ${x.tall?'checked':''}> Tall tile</label><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+ if(id==='testimonials') return `<div class="grid2">${field('Name','name',x.name)}${field('Role','role',x.role||'student')}</div>${field('Quote','quote',x.quote||'','textarea')}${field('Star rating','rating',x.rating||5,'number','min="1" max="5"')}<button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+ if(id==='officers') return `<div class="grid2">${field('Name','name',x.name)}${field('Position','position',x.position)}</div>${field('Short bio','bio',x.bio||'','textarea')}${imageField('Photo','photo',x.photo)}<button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+}
+function readBox(box){const out={}; box.querySelectorAll('[data-key]').forEach(el=>out[el.dataset.key]=el.type==='checkbox'?el.checked:el.value); box.querySelectorAll('[data-image-value]').forEach(el=>out[el.dataset.imageValue]=el.value); return out;}
+function wireImages(){document.querySelectorAll('[data-image-input]').forEach(input=>input.onchange=async()=>{const f=input.files?.[0];if(!f)return;try{const url=await uploadImage(f,input.dataset.imageInput); const hidden=q(`[data-image-value="${input.dataset.imageInput}"]`); const img=q(`[data-preview="${input.dataset.imageInput}"]`); if(hidden)hidden.value=url;if(img){img.src=url;img.classList.remove('hidden')}}catch(e){showMessage(e.message,'error')}});}
+async function uploadImage(file,slot){const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,''); const path=`${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext||'jpg'}`; const {error}=await client.storage.from('website-images').upload(path,file,{upsert:false,cacheControl:'31536000',contentType:file.type||'image/jpeg'}); if(error)throw error; const {data}=client.storage.from('website-images').getPublicUrl(path); return data.publicUrl;}
+async function saveSection(id){undoStack[id]=clone(content[id==='hero'?'hero':id]);const box=q('#sections');if(id==='hero'){content.hero.headline=box.querySelector('[data-key="headline"]').value;content.hero.subtext=box.querySelector('[data-key="subtext"]').value;content.hero.backgroundPhoto=box.querySelector('[data-image-value="hero-background"]').value}else if(id==='missionVision'){content.missionVision.mission=box.querySelector('[data-key="mission"]').value;content.missionVision.vision=box.querySelector('[data-key="vision"]').value}else if(id==='contact'){content.contact=readBox(box)}await saveDraft();showSection(id)}
+async function addItem(id){undoStack[id]=clone(content[id]);const blank={news:{tag:'News',date:'',title:'New announcement',excerpt:'',fullBody:'',coverImage:'',published:false},events:{name:'New event',date:'',time:'',venue:'',registrationLink:'',published:false},gallery:{label:'New photo',category:'Campus',photo:'',tall:false},testimonials:{name:'New testimonial',role:'student',quote:'',rating:5},programs:{name:'New program',description:'',icon:'school'},officers:{name:'New officer',position:'',bio:'',photo:''}}[id];content[id].push(blank);await saveDraft();showSection(id)}
+async function saveItem(key){const [id,idx]=key.split(':');const i=Number(idx);const box=q(`#edit-${id}-${i}`);undoStack[id]=clone(content[id]);content[id][i]={...content[id][i],...readBox(box)};if(id==='testimonials')content[id][i].rating=Math.max(1,Math.min(5,Number(content[id][i].rating)||5));await saveDraft();showSection(id)}
+async function deleteItem(key){const [id,idx]=key.split(':');if(!confirm('Delete this item?'))return;undoStack[id]=clone(content[id]);content[id].splice(Number(idx),1);await saveDraft();showSection(id)}
+async function moveItem(key,dir){const [id,idx]=key.split(':');const i=Number(idx),j=i+Number(dir);if(j<0||j>=content[id].length)return;undoStack[id]=clone(content[id]);[content[id][i],content[id][j]]=[content[id][j],content[id][i]];await saveDraft();showSection(id)}
+async function init(){
+  if(!client){q('#loginMsg').innerHTML='<div class="error">Supabase is not configured yet. You need to fill in config.js before the real admin can work.</div>';return;}
+  const {data:{session}}=await client.auth.getSession();
+  if(session && await ensureAdmin()){user=session.user;q('#login').classList.add('hidden');q('#app').classList.remove('hidden');q('#sideUser').innerHTML=`Signed in as<br><b>${esc(user.email||'')}</b>`;menu();await loadContent();showSection('hero');}
+}
+q('#loginForm').onsubmit=async(e)=>{e.preventDefault();hideMessage();const email=q('#email').value.trim(),password=q('#password').value;const {error}=await client.auth.signInWithPassword({email,password});if(error){q('#loginMsg').innerHTML=`<div class="error">${esc(error.message)}</div>`;return}try{if(!(await ensureAdmin())){await client.auth.signOut();throw new Error('This account is not authorized as an admin yet. Ask the primary admin to add your Auth user ID to admin_users.')}q('#login').classList.add('hidden');q('#app').classList.remove('hidden');q('#sideUser').innerHTML=`Signed in as<br><b>${esc(user.email||'')}</b>`;menu();await loadContent();showSection('hero')}catch(err){await client.auth.signOut();q('#app').classList.add('hidden');q('#login').classList.remove('hidden');q('#loginMsg').innerHTML=`<div class="error">${esc(err.message)}</div>`}}
+q('#logoutBtn').onclick=async()=>{await client.auth.signOut();location.reload()};
+q('#publishBtn').onclick=async()=>{try{await publish()}catch(e){showMessage(e.message,'error')}};
+document.addEventListener('click',async e=>{try{const n=e.target.closest('[data-nav]');if(n)showSection(n.dataset.nav);const a=e.target.closest('[data-add]');if(a)await addItem(a.dataset.add);const ed=e.target.closest('[data-edit]');if(ed)q(`#edit-${ed.dataset.edit.replace(':','-')}`).classList.toggle('hidden');const sv=e.target.closest('[data-save]');if(sv)await saveSection(sv.dataset.save);const si=e.target.closest('[data-save-item]');if(si)await saveItem(si.dataset.saveItem);const de=e.target.closest('[data-delete]');if(de)await deleteItem(de.dataset.delete);const mv=e.target.closest('[data-move]');if(mv){const [id,i,d]=mv.dataset.move.split(':');await moveItem(`${id}:${i}`,d)}}catch(err){showMessage(err.message,'error')}});
+const origShowSection=showSection; showSection=function(id){origShowSection(id);setTimeout(wireImages,0)};
+init();
+</script>
+</body></html>

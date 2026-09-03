@@ -1,0 +1,8 @@
+# local editor files
+.vscode/
+.idea/
+*.log
+
+# local environment files
+.env
+.env.*
