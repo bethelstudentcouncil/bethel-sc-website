@@ -78,7 +78,7 @@ async function publish(){
   if(error) throw error; q('#status').textContent='Published: '+new Date(now).toLocaleString(); toast('Changes are live');
 }
 function menu(){const side=q('#sideNav'),mobile=q('#mobileNav'); const buttons=NAV.map(([id,label])=>`<button data-nav="${id}">${label}</button>`).join(''); side.innerHTML=buttons; mobile.innerHTML=buttons; document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>showSection(b.dataset.nav));}
-function showSection(id){current=id;document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===id));q('#title').textContent=NAV.find(x=>x[0]===id)?.[1]||'Dashboard';q('#sections').innerHTML=render(id);wireSection(id);}
+function showSection(id){current=id;document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===id));q('#title').textContent=NAV.find(x=>x[0]===id)?.[1]||'Dashboard';q('#sections').innerHTML=render(id);}
 function render(id){
  if(id==='hero') return `<div class="panel"><h2>Hero Section</h2><p class="muted">Edit the public hero without touching the page design.</p>${field('Headline','headline',content.hero.headline)}${field('Subtext / Motto','subtext',content.hero.subtext)}${imageField('Background Photo','hero-background',content.hero.backgroundPhoto)}<button class="btn primary" data-save="hero">Save Section</button></div>`;
  if(id==='missionVision') return `<div class="panel"><h2>Mission & Vision</h2>${field('Mission','mission',content.missionVision.mission,'textarea')}${field('Vision','vision',content.missionVision.vision,'textarea')}<button class="btn primary" data-save="missionVision">Save Section</button></div>`;
