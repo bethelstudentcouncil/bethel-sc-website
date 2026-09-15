@@ -386,7 +386,11 @@
   </div>
   <div class="footer-bottom">
     <p>© 2026 Bethel International School. All rights reserved.</p><a href="admin.html" class="font-mono" style="font-size:11px;color:rgba(251,248,241,.45);">SC Admin</a>
-    <p id="socialLinks" class="font-mono">[Facebook placeholder] · [Instagram placeholder]</p>
+    <p id="socialLinks" class="font-mono">
+  FB:<a href="https://www.facebook.com/bethel.IS.sc" target="_blank" rel="noopener noreferrer">https://www.facebook.com/bethel.IS.sc</a>
+  ·
+  IG:<a href="https://www.instagram.com/bethel.sc/?hl=en" target="_blank" rel="noopener noreferrer">https://www.instagram.com/bethel.sc/?hl=en</a>
+</p>
   </div>
 </footer>
 
@@ -608,7 +612,9 @@ counters.forEach(el => countObs.observe(el));
       if (a && c.contact.address) a.lastChild.textContent = ' ' + c.contact.address;
       if (p && c.contact.phone) p.lastChild.textContent = ' ' + c.contact.phone;
       if (e && c.contact.email) e.lastChild.textContent = ' ' + c.contact.email;
-      if (s) s.textContent = (c.contact.facebook ? 'Facebook' : '[Facebook placeholder]') + ' · ' + (c.contact.instagram ? 'Instagram' : '[Instagram placeholder]');
+      if (s) {
+  s.innerHTML = 'FB:<a href="https://www.facebook.com/bethel.IS.sc" target="_blank" rel="noopener noreferrer">https://www.facebook.com/bethel.IS.sc</a> · IG:<a href="https://www.instagram.com/bethel.sc/?hl=en" target="_blank" rel="noopener noreferrer">https://www.instagram.com/bethel.sc/?hl=en</a>';
+}
     }
 
     const programs = Array.isArray(c.programs) ? c.programs : [];
