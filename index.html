@@ -635,6 +635,7 @@ counters.forEach(el => countObs.observe(el));
 
     const tg = document.getElementById('testGrid');
     if (tg) tg.innerHTML = testimonials.map((t,i)=>`<div class="reveal" data-r data-delay="${i*90}"><div class="test-card card-lift">${icon('quote',26).replace('class="icon"','class="icon" style="color:var(--c-gold)"')}<p class="quote font-display">"${esc(t.quote||'')}"</p><div class="test-foot"><div class="avatar font-mono">${esc(t.initials||String(t.name||'').split(' ').map(x=>x[0]).join('').slice(0,2))}</div><div><p class="test-name">${esc(t.name||'')}</p><p class="test-role">${esc(t.role||'')}</p></div><div class="stars">${Array(Math.min(5,Math.max(0,Number(t.rating)||5))).fill(`<svg class="icon" viewBox="0 0 24 24" width="13" height="13" style="color:var(--c-gold);fill:#C7A24A;">${ICONS.star}</svg>`).join('')}</div></div></div></div>`).join('');
+    document.querySelectorAll('[data-r]').forEach(el => el.classList.add('in'));
   } catch (err) {
     console.error('Unable to load published Bethel content:', err);
   }
