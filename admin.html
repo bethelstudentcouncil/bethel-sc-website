@@ -68,8 +68,9 @@ async function loadContent(){
 function defaultContent(){return {hero:{headline:'Bethel International School',subtext:'Student Council Website',backgroundPhoto:''},missionVision:{mission:'',vision:''},contact:{phone:'',email:'bethelstudentcouncilsy24@gmail.com',address:'',facebook:'',instagram:''},programs:[],news:[],events:[],gallery:[],testimonials:[],officers:[]}}
 async function saveDraft(){
   const {data:{user:u}}=await client.auth.getUser();
-  const {error}=await client.from('site_content').update({draft:content,updated_at:new Date().toISOString(),updated_by:u.id}).eq('id',1);
-  if(error) throw error; toast('Draft saved');
+  const now=new Date().toISOString();
+  const {error}=await client.from('site_content').update({draft:content,published:content,updated_at:now,published_at:now,updated_by:u.id,published_by:u.id}).eq('id',1);
+  if(error) throw error; q('#status').textContent='Live: '+new Date(now).toLocaleString(); toast('Saved and live on the website');
 }
 async function publish(){
   const {data:{user:u}}=await client.auth.getUser();
