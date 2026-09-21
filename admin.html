@@ -43,67 +43,168 @@
   </main>
 </div>
 <script>
-const NAV=[['hero','Hero'],['missionVision','Mission & Vision'],['news','News'],['events','Events'],['gallery','Gallery'],['testimonials','Testimonials'],['programs','Programs'],['officers','Officers'],['contact','Contact'],['admins','Admin Access']];
-let current='hero'; let content=null; let undoStack={}; let user=null;
+const NAV=[['hero','Hero'],['about','About & Mission'],['officers','Officers'],['news','News'],['events','Events'],['gallery','Gallery'],['programs','Programs'],['testimonial','Testimonial'],['contact','Contact'],['admins','Admin Access']];
+let current='hero'; let content=null; let user=null;
 const client=window.bethelSupabase;
 function q(s){return document.querySelector(s)}
 function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-function toast(msg,ok=false){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2600)}
+function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2600)}
 function showMessage(text,type='notice'){q('#message').innerHTML=`<div class="${type}">${esc(text)}</div>`}
 function hideMessage(){q('#message').innerHTML=''}
 function field(label,key,val,type='text',extra=''){return `<div class="field"><label>${esc(label)}</label>${type==='textarea'?`<textarea data-key="${key}" ${extra}>${esc(val||'')}</textarea>`:`<input data-key="${key}" type="${type}" value="${esc(val||'')}" ${extra}>`}</div>`}
 function imageField(label,key,val){return `<div class="field"><label>${esc(label)}</label><div class="drop"><div>Drop an image here or choose a file</div><input data-image-input="${key}" type="file" accept="image/*"><input type="hidden" data-image-value="${key}" value="${esc(val||'')}">${val?`<img class="preview" data-preview="${key}" src="${esc(val)}">`:`<img class="preview hidden" data-preview="${key}">`}</div></div>`}
 function clone(x){return JSON.parse(JSON.stringify(x));}
+
+/* ---------- default content shape (mirrors index.html) ---------- */
+function defaultContent(){return {
+  hero:{headlineMain:'BETHEL',headlineAccent:'@25',subtext:'Faithful then, faithful still.',copy:'Twenty-five years of Bethel students stepping up — organizing events, representing classmates, and keeping school spirit loud. This is where it all happens.'},
+  about:{mission:'',vision:'',body1:'',body2:'',photo:'',features:['','','','']},
+  officers:[],
+  news:[],
+  events:[],
+  gallery:{categories:['Student Council Activities','Buwan ng Wika','Leadership Activities','Outreach & Community','Other Events'],items:[]},
+  programs:[
+    {name:'Student Voice',icon:'🗳️',description:''},
+    {name:'Leadership',icon:'🎯',description:''},
+    {name:'Community',icon:'🤝',description:''},
+    {name:'School Spirit',icon:'🎉',description:''}
+  ],
+  testimonial:{quote:'',name:'',role:'',rating:5},
+  contact:{phone:'',email:'bethelstudentcouncilsy24@gmail.com',address:'',mapLink:'',facebook:'',instagram:''}
+}}
+
+/* merge saved content over defaults so newly-added fields (added after this admin update) always exist */
+function mergeDefaults(base,extra){
+  if(!extra||typeof extra!=='object') return clone(base);
+  const out=Array.isArray(base)?clone(extra):{...base};
+  for(const k in base){
+    if(extra[k]===undefined){out[k]=clone(base[k]);continue}
+    if(Array.isArray(base[k])) out[k]=Array.isArray(extra[k])?extra[k]:clone(base[k]);
+    else if(typeof base[k]==='object'&&base[k]!==null) out[k]=mergeDefaults(base[k],extra[k]);
+    else out[k]=extra[k];
+  }
+  return out;
+}
+
 async function ensureAdmin(){
   if(!client) throw new Error('Supabase client is not configured. Open config.js and add the Project URL + Publishable key.');
   const {data:{user:u}}=await client.auth.getUser(); user=u; if(!u) return false;
   const {data, error}=await client.from('admin_users').select('user_id,email').eq('user_id',u.id).maybeSingle();
   if(error) throw error; return !!data;
 }
+/* convert older content shapes (missionVision, plain gallery array) into the current shape without losing real data */
+function migrateLegacy(raw){
+  if(!raw||typeof raw!=='object') return raw;
+  const out={...raw};
+  if(raw.missionVision && !raw.about){
+    out.about={mission:raw.missionVision.mission||'',vision:raw.missionVision.vision||'',body1:'',body2:'',photo:'',features:['','','','']};
+  }
+  if(Array.isArray(raw.gallery)){
+    const cats=[...new Set(raw.gallery.map(g=>g.category).filter(Boolean))];
+    out.gallery={
+      categories: cats.length?cats:['Student Council Activities','Buwan ng Wika','Leadership Activities','Outreach & Community','Other Events'],
+      items: raw.gallery.map(g=>({label:g.label||g.caption||'',cat:g.category||cats[0]||'',photo:g.photo||'',size:g.tall?'h1':'h3'}))
+    };
+  }
+  return out;
+}
 async function loadContent(){
   const {data,error}=await client.from('site_content').select('draft,published,updated_at,published_at,updated_by,published_by').eq('id',1).single();
-  if(error) throw error; content=data.draft||data.published||defaultContent();
-  q('#status').textContent=data.published_at?`Last published: ${new Date(data.published_at).toLocaleString()}`:'Not published yet';
+  if(error) throw error;
+  const original=data.draft||data.published||{};
+  const raw=migrateLegacy(original);
+  const migrated = raw.about!==original.about || raw.gallery!==original.gallery;
+  content=mergeDefaults(defaultContent(), raw);
+  q('#status').textContent=data.published_at?`Last saved: ${new Date(data.published_at).toLocaleString()}`:'Not published yet';
+  if(migrated){ await saveDraft(); toast('Updated your site to the new format — nothing was lost'); }
 }
-function defaultContent(){return {hero:{headline:'Bethel International School',subtext:'Student Council Website',backgroundPhoto:''},missionVision:{mission:'',vision:''},contact:{phone:'',email:'bethelstudentcouncilsy24@gmail.com',address:'',facebook:'',instagram:''},programs:[],news:[],events:[],gallery:[],testimonials:[],officers:[]}}
 async function saveDraft(){
   const {data:{user:u}}=await client.auth.getUser();
   const now=new Date().toISOString();
   const {error}=await client.from('site_content').update({draft:content,published:content,updated_at:now,published_at:now,updated_by:u.id,published_by:u.id}).eq('id',1);
   if(error) throw error; q('#status').textContent='Live: '+new Date(now).toLocaleString(); toast('Saved and live on the website');
 }
-async function publish(){
-  const {data:{user:u}}=await client.auth.getUser();
-  const now=new Date().toISOString();
-  const {error}=await client.from('site_content').update({published:content,draft:content,updated_at:now,published_at:now,updated_by:u.id,published_by:u.id}).eq('id',1);
-  if(error) throw error; q('#status').textContent='Published: '+new Date(now).toLocaleString(); toast('Changes are live');
-}
+async function publish(){ await saveDraft(); toast('Changes are live'); }
+
 function menu(){const side=q('#sideNav'),mobile=q('#mobileNav'); const buttons=NAV.map(([id,label])=>`<button data-nav="${id}">${label}</button>`).join(''); side.innerHTML=buttons; mobile.innerHTML=buttons; document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>showSection(b.dataset.nav));}
-function showSection(id){current=id;document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===id));q('#title').textContent=NAV.find(x=>x[0]===id)?.[1]||'Dashboard';q('#sections').innerHTML=render(id);}
+function showSection(id){current=id;document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===id));q('#title').textContent=NAV.find(x=>x[0]===id)?.[1]||'Dashboard';q('#sections').innerHTML=render(id);setTimeout(wireImages,0)}
+
 function render(id){
- if(id==='hero') return `<div class="panel"><h2>Hero Section</h2><p class="muted">Edit the public hero without touching the page design.</p>${field('Headline','headline',content.hero.headline)}${field('Subtext / Motto','subtext',content.hero.subtext)}${imageField('Background Photo','hero-background',content.hero.backgroundPhoto)}<button class="btn primary" data-save="hero">Save Section</button></div>`;
- if(id==='missionVision') return `<div class="panel"><h2>Mission & Vision</h2>${field('Mission','mission',content.missionVision.mission,'textarea')}${field('Vision','vision',content.missionVision.vision,'textarea')}<button class="btn primary" data-save="missionVision">Save Section</button></div>`;
- if(id==='contact') return `<div class="panel"><h2>Contact Information</h2>${field('Phone','phone',content.contact.phone)}${field('Email','email',content.contact.email,'email')}${field('Address','address',content.contact.address)}${field('Facebook link','facebook',content.contact.facebook)}${field('Instagram link','instagram',content.contact.instagram)}<button class="btn primary" data-save="contact">Save Section</button></div>`;
- if(id==='admins') return `<div class="panel"><h2>Admin Access</h2><p class="muted">To give another person access, create their user in Supabase Authentication first, then add their Auth User ID to the <code>admin_users</code> table. This avoids putting passwords in the website code.</p><div class="notice"><b>Your current account:</b> ${esc(user?.email||'')}<br><br><b>Important:</b> Never share a Supabase secret/service-role key. Other admins should get their own login.</div><div style="margin-top:16px"><a class="btn ghost" href="https://supabase.com/dashboard" target="_blank" rel="noopener">Open Supabase Dashboard</a></div></div>`;
- return listEditor(id);
+  if(id==='hero') return `<div class="panel"><h2>Hero Section</h2><p class="muted">The big headline visitors see first. "Headline highlight" is shown in gold, e.g. main "BETHEL", highlight "@25".</p>${field('Headline (main)','headlineMain',content.hero.headlineMain)}${field('Headline (gold highlight)','headlineAccent',content.hero.headlineAccent)}${field('Subtext / Motto','subtext',content.hero.subtext)}${field('Short description','copy',content.hero.copy,'textarea')}<button class="btn primary" data-save="hero">Save Section</button></div>`;
+  if(id==='about') return `<div class="panel"><h2>About & Mission</h2>${field('Mission','mission',content.about.mission,'textarea')}${field('Vision','vision',content.about.vision,'textarea')}${field('Intro paragraph 1','body1',content.about.body1,'textarea')}${field('Intro paragraph 2','body2',content.about.body2,'textarea')}${imageField('About photo','about-photo',content.about.photo)}<div class="grid2">${field('Highlight 1','f0',content.about.features[0])}${field('Highlight 2','f1',content.about.features[1])}</div><div class="grid2">${field('Highlight 3','f2',content.about.features[2])}${field('Highlight 4','f3',content.about.features[3])}</div><button class="btn primary" data-save="about">Save Section</button></div>`;
+  if(id==='testimonial') return `<div class="panel"><h2>Testimonial</h2><p class="muted">The single featured quote shown in the large navy section.</p>${field('Quote','quote',content.testimonial.quote,'textarea')}<div class="grid2">${field('Name','name',content.testimonial.name)}${field('Role','role',content.testimonial.role)}</div>${field('Star rating (1-5)','rating',content.testimonial.rating,'number','min="1" max="5"')}<button class="btn primary" data-save="testimonial">Save Section</button></div>`;
+  if(id==='contact') return `<div class="panel"><h2>Contact Information</h2>${field('Phone','phone',content.contact.phone)}${field('Email','email',content.contact.email,'email')}${field('Address','address',content.contact.address)}${field('Google Maps link','mapLink',content.contact.mapLink)}${field('Facebook link','facebook',content.contact.facebook)}${field('Instagram link','instagram',content.contact.instagram)}<button class="btn primary" data-save="contact">Save Section</button></div>`;
+  if(id==='admins') return `<div class="panel"><h2>Admin Access</h2><p class="muted">To give another person access, create their user in Supabase Authentication first, then add their Auth User ID to the <code>admin_users</code> table. This avoids putting passwords in the website code.</p><div class="notice"><b>Your current account:</b> ${esc(user?.email||'')}<br><br><b>Important:</b> Never share a Supabase secret/service-role key. Other admins should get their own login.</div><div style="margin-top:16px"><a class="btn ghost" href="https://supabase.com/dashboard" target="_blank" rel="noopener">Open Supabase Dashboard</a></div></div>`;
+  if(id==='gallery') return galleryEditor();
+  return listEditor(id);
 }
-function listEditor(id){const arr=content[id]||[]; const labels={news:'News & Announcements',events:'Upcoming Events',gallery:'Photo Gallery',testimonials:'Testimonials',programs:'Programs',officers:'Student Council Officers'}; return `<div class="panel"><div class="panel-head"><div><h2>${labels[id]}</h2><div class="muted">Add, edit, reorder, publish/unpublish, or delete items.</div></div><button class="btn gold" data-add="${id}">+ Add</button></div><div class="list">${arr.map((item,i)=>`<div class="item"><div class="item-head"><div><div class="item-title">${esc(item.title||item.name||item.label||item.position||'Untitled')}</div><span class="status">${esc(item.category||item.tag||item.role||'Entry')}</span></div><div class="item-actions"><button class="ghost" data-move="${id}:${i}:-1">↑</button><button class="ghost" data-move="${id}:${i}:1">↓</button><button class="ghost" data-edit="${id}:${i}">Edit</button><button class="danger" data-delete="${id}:${i}">Delete</button></div></div><div id="edit-${id}-${i}" class="hidden" style="margin-top:14px">${formFor(id,item,i)}</div></div>`).join('')}</div></div>`}
+
+/* ---------- generic repeatable-item sections (officers, news, events, programs) ---------- */
+function listEditor(id){const arr=content[id]||[]; const labels={news:'News & Announcements',events:'Upcoming Events',programs:'Programs',officers:'Student Council Officers'}; return `<div class="panel"><div class="panel-head"><div><h2>${labels[id]}</h2><div class="muted">Add, edit, reorder, publish/unpublish, or delete items.</div></div><button class="btn gold" data-add="${id}">+ Add</button></div><div class="list">${arr.map((item,i)=>`<div class="item"><div class="item-head"><div><div class="item-title">${esc(item.title||item.name||'Untitled')}</div><span class="status">${esc(item.category||item.tag||item.position||'Entry')}</span></div><div class="item-actions"><button class="ghost" data-move="${id}:${i}:-1">↑</button><button class="ghost" data-move="${id}:${i}:1">↓</button><button class="ghost" data-edit="${id}:${i}">Edit</button><button class="danger" data-delete="${id}:${i}">Delete</button></div></div><div id="edit-${id}-${i}" class="hidden" style="margin-top:14px">${formFor(id,item,i)}</div></div>`).join('')}</div></div>`}
 function formFor(id,x,i){
- if(id==='programs') return `${field('Program name','name',x.name)}${field('Description','description',x.description||x.blurb||'','textarea')}<div class="field"><label>Icon</label><select data-key="icon"><option ${x.icon==='heart'?'selected':''}>heart</option><option ${x.icon==='book'?'selected':''}>book</option><option ${x.icon==='school'?'selected':''}>school</option><option ${x.icon==='cap'?'selected':''}>cap</option><option ${x.icon==='trophy'?'selected':''}>trophy</option></select></div><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
- if(id==='news') return `<div class="grid2">${field('Category','tag',x.tag||'News')}${field('Date','date',x.date||'')}</div>${field('Title','title',x.title)}${field('Excerpt','excerpt',x.excerpt||'','textarea')}${field('Full Body','fullBody',x.fullBody||'','textarea')}${imageField('Cover image','coverImage',x.coverImage)}<label class="checkbox"><input data-key="published" type="checkbox" ${x.published!==false?'checked':''}> Published</label><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
- if(id==='events') return `<div class="grid2">${field('Event name','name',x.name||x.title)}${field('Date','date',x.date||'','date')}</div><div class="grid2">${field('Time','time',x.time)}${field('Venue','venue',x.venue)}</div>${field('Registration link','registrationLink',x.registrationLink||'')}<label class="checkbox"><input data-key="published" type="checkbox" ${x.published!==false?'checked':''}> Published</label><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
- if(id==='gallery') return `${field('Caption','label',x.label||x.caption||'')}<div class="field"><label>Category</label><select data-key="category">${['Campus','Intramurals','Student Council','Graduation','Outreach','Clubs'].map(c=>`<option ${x.category===c?'selected':''}>${c}</option>`).join('')}</select></div>${imageField('Photo','photo',x.photo)}<label class="checkbox"><input data-key="tall" type="checkbox" ${x.tall?'checked':''}> Tall tile</label><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
- if(id==='testimonials') return `<div class="grid2">${field('Name','name',x.name)}${field('Role','role',x.role||'student')}</div>${field('Quote','quote',x.quote||'','textarea')}${field('Star rating','rating',x.rating||5,'number','min="1" max="5"')}<button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
- if(id==='officers') return `<div class="grid2">${field('Name','name',x.name)}${field('Position','position',x.position)}</div>${field('Short bio','bio',x.bio||'','textarea')}${imageField('Photo','photo',x.photo)}<button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+  if(id==='programs') return `${field('Program name','name',x.name)}${field('Icon (emoji)','icon',x.icon)}${field('Description','description',x.description,'textarea')}<button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+  if(id==='news') return `<div class="grid2">${field('Category','tag',x.tag||'News')}${field('Date','date',x.date||'')}</div>${field('Title','title',x.title)}${field('Excerpt','excerpt',x.excerpt||'','textarea')}${field('Full Body','fullBody',x.fullBody||'','textarea')}${imageField('Cover image','coverImage',x.coverImage)}<label class="checkbox"><input data-key="feature" type="checkbox" ${x.feature?'checked':''}> Show as featured story</label><label class="checkbox"><input data-key="published" type="checkbox" ${x.published!==false?'checked':''}> Published</label><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+  if(id==='events') return `<div class="grid2">${field('Event name','name',x.name)}${field('Date','date',x.date||'','date')}</div><div class="grid2">${field('Time','time',x.time)}${field('Venue','venue',x.venue)}</div>${field('Short description','desc',x.desc||'','textarea')}${field('Registration link','registrationLink',x.registrationLink||'')}<label class="checkbox"><input data-key="published" type="checkbox" ${x.published!==false?'checked':''}> Published</label><button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
+  if(id==='officers') return `<div class="grid2">${field('Name','name',x.name)}${field('Position','position',x.position)}</div>${field('Short bio','bio',x.bio||'','textarea')}${imageField('Photo','photo',x.photo)}<button class="btn primary" data-save-item="${id}:${i}">Save Item</button>`;
 }
+
+/* ---------- gallery: dynamic categories + photo items ---------- */
+const SIZE_OPTIONS=[['h5','Small'],['h3','Medium'],['h2','Large'],['h1','Featured (extra large)']];
+function galleryEditor(){
+  const cats=content.gallery.categories||[];
+  const items=content.gallery.items||[];
+  const catChips=cats.map((c,i)=>`<div class="item" style="padding:10px 14px"><div class="item-head"><div class="item-title" style="font-size:14px">${esc(c)}</div><div class="item-actions"><button class="ghost" data-cat-move="${i}:-1">↑</button><button class="ghost" data-cat-move="${i}:1">↓</button><button class="ghost" data-cat-rename="${i}">Rename</button><button class="danger" data-cat-delete="${i}">Delete</button></div></div></div>`).join('');
+  const catSelectOptions=cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  const itemRows=items.map((it,i)=>`<div class="item"><div class="item-head"><div><div class="item-title">${esc(it.label||'Untitled photo')}</div><span class="status">${esc(it.cat||'Uncategorized')}</span></div><div class="item-actions"><button class="ghost" data-move="gallery:${i}:-1">↑</button><button class="ghost" data-move="gallery:${i}:1">↓</button><button class="ghost" data-edit="gallery:${i}">Edit</button><button class="danger" data-delete="gallery:${i}">Delete</button></div></div><div id="edit-gallery-${i}" class="hidden" style="margin-top:14px">${field('Caption','label',it.label||'')}<div class="field"><label>Category</label><select data-key="cat">${cats.length?catSelectOptions:'<option value="">Add a category below first</option>'}</select></div><div class="field"><label>Tile size</label><select data-key="size">${SIZE_OPTIONS.map(([v,l])=>`<option value="${v}" ${it.size===v?'selected':''}>${l}</option>`).join('')}</select></div>${imageField('Photo','photo',it.photo)}<button class="btn primary" data-save-item="gallery:${i}">Save Item</button></div></div>`).join('');
+  return `<div class="panel"><div class="panel-head"><div><h2>Gallery Categories</h2><div class="muted">Add, rename, reorder, or remove the categories visitors can filter by.</div></div><button class="btn gold" data-add-cat="1">+ Add Category</button></div><div class="list">${catChips||'<p class="muted">No categories yet. Add one to start organizing photos.</p>'}</div></div>
+  <div class="panel"><div class="panel-head"><div><h2>Photo Gallery</h2><div class="muted">Add, edit, reorder, or delete photos.</div></div><button class="btn gold" data-add="gallery">+ Add Photo</button></div><div class="list">${itemRows||'<p class="muted">No photos yet.</p>'}</div></div>`;
+}
+function addCategory(){const name=prompt('New category name:');if(!name)return;content.gallery.categories.push(name.trim());saveDraft();showSection('gallery')}
+function renameCategory(i){const old=content.gallery.categories[i];const name=prompt('Rename category:',old);if(!name)return;const trimmed=name.trim();content.gallery.items.forEach(it=>{if(it.cat===old)it.cat=trimmed});content.gallery.categories[i]=trimmed;saveDraft();showSection('gallery')}
+function deleteCategory(i){if(!confirm('Delete this category? Photos already using it will keep their old label but stop showing under this filter.'))return;content.gallery.categories.splice(i,1);saveDraft();showSection('gallery')}
+function moveCategory(i,dir){const j=i+dir;if(j<0||j>=content.gallery.categories.length)return;[content.gallery.categories[i],content.gallery.categories[j]]=[content.gallery.categories[j],content.gallery.categories[i]];saveDraft();showSection('gallery')}
+
+/* ---------- shared item CRUD ---------- */
 function readBox(box){const out={}; box.querySelectorAll('[data-key]').forEach(el=>out[el.dataset.key]=el.type==='checkbox'?el.checked:el.value); box.querySelectorAll('[data-image-value]').forEach(el=>out[el.dataset.imageValue]=el.value); return out;}
-function wireImages(){document.querySelectorAll('[data-image-input]').forEach(input=>input.onchange=async()=>{const f=input.files?.[0];if(!f)return;try{const url=await uploadImage(f,input.dataset.imageInput); const hidden=q(`[data-image-value="${input.dataset.imageInput}"]`); const img=q(`[data-preview="${input.dataset.imageInput}"]`); if(hidden)hidden.value=url;if(img){img.src=url;img.classList.remove('hidden')}}catch(e){showMessage(e.message,'error')}});}
-async function uploadImage(file,slot){const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,''); const path=`${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext||'jpg'}`; const {error}=await client.storage.from('website-images').upload(path,file,{upsert:false,cacheControl:'31536000',contentType:file.type||'image/jpeg'}); if(error)throw error; const {data}=client.storage.from('website-images').getPublicUrl(path); return data.publicUrl;}
-async function saveSection(id){undoStack[id]=clone(content[id==='hero'?'hero':id]);const box=q('#sections');if(id==='hero'){content.hero.headline=box.querySelector('[data-key="headline"]').value;content.hero.subtext=box.querySelector('[data-key="subtext"]').value;content.hero.backgroundPhoto=box.querySelector('[data-image-value="hero-background"]').value}else if(id==='missionVision'){content.missionVision.mission=box.querySelector('[data-key="mission"]').value;content.missionVision.vision=box.querySelector('[data-key="vision"]').value}else if(id==='contact'){content.contact=readBox(box)}await saveDraft();showSection(id)}
-async function addItem(id){undoStack[id]=clone(content[id]);const blank={news:{tag:'News',date:'',title:'New announcement',excerpt:'',fullBody:'',coverImage:'',published:false},events:{name:'New event',date:'',time:'',venue:'',registrationLink:'',published:false},gallery:{label:'New photo',category:'Campus',photo:'',tall:false},testimonials:{name:'New testimonial',role:'student',quote:'',rating:5},programs:{name:'New program',description:'',icon:'school'},officers:{name:'New officer',position:'',bio:'',photo:''}}[id];content[id].push(blank);await saveDraft();showSection(id)}
-async function saveItem(key){const [id,idx]=key.split(':');const i=Number(idx);const box=q(`#edit-${id}-${i}`);undoStack[id]=clone(content[id]);content[id][i]={...content[id][i],...readBox(box)};if(id==='testimonials')content[id][i].rating=Math.max(1,Math.min(5,Number(content[id][i].rating)||5));await saveDraft();showSection(id)}
-async function deleteItem(key){const [id,idx]=key.split(':');if(!confirm('Delete this item?'))return;undoStack[id]=clone(content[id]);content[id].splice(Number(idx),1);await saveDraft();showSection(id)}
-async function moveItem(key,dir){const [id,idx]=key.split(':');const i=Number(idx),j=i+Number(dir);if(j<0||j>=content[id].length)return;undoStack[id]=clone(content[id]);[content[id][i],content[id][j]]=[content[id][j],content[id][i]];await saveDraft();showSection(id)}
+function wireImages(){document.querySelectorAll('[data-image-input]').forEach(input=>input.onchange=async()=>{
+  const f=input.files?.[0];if(!f)return;
+  const scope=input.closest('.drop')||document;
+  try{
+    const url=await uploadImage(f);
+    const hidden=scope.querySelector('[data-image-value]');
+    const img=scope.querySelector('[data-preview]');
+    if(hidden)hidden.value=url;
+    if(img){img.src=url;img.classList.remove('hidden')}
+  }catch(e){showMessage(e.message,'error')}
+});}
+async function uploadImage(file){const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,''); const path=`${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext||'jpg'}`; const {error}=await client.storage.from('website-images').upload(path,file,{upsert:false,cacheControl:'31536000',contentType:file.type||'image/jpeg'}); if(error)throw error; const {data}=client.storage.from('website-images').getPublicUrl(path); return data.publicUrl;}
+
+async function saveSection(id){
+  const box=q('#sections');
+  if(id==='hero'){content.hero={...content.hero,...readBox(box)}}
+  else if(id==='about'){const b=readBox(box);content.about.mission=b.mission;content.about.vision=b.vision;content.about.body1=b.body1;content.about.body2=b.body2;content.about.photo=b['about-photo'];content.about.features=[b.f0,b.f1,b.f2,b.f3]}
+  else if(id==='testimonial'){content.testimonial={...content.testimonial,...readBox(box)};content.testimonial.rating=Math.max(1,Math.min(5,Number(content.testimonial.rating)||5))}
+  else if(id==='contact'){content.contact=readBox(box)}
+  await saveDraft();showSection(id)
+}
+const BLANKS={
+  news:{tag:'News',date:'',title:'New announcement',excerpt:'',fullBody:'',coverImage:'',published:false,feature:false},
+  events:{name:'New event',date:'',time:'',venue:'',desc:'',registrationLink:'',published:false},
+  gallery:{label:'New photo',cat:(content&&content.gallery.categories[0])||'',photo:'',size:'h3'},
+  programs:{name:'New program',description:'',icon:'⭐'},
+  officers:{name:'New officer',position:'',bio:'',photo:''}
+};
+async function addItem(id){
+  const blank=clone(BLANKS[id]);
+  if(id==='gallery'){blank.cat=content.gallery.categories[0]||'';content.gallery.items.push(blank);}
+  else{content[id].push(blank);}
+  await saveDraft();
+  showSection(id);
+}
+async function saveItem(key){const [id,idx]=key.split(':');const i=Number(idx);const box=q(`#edit-${id}-${i}`);const arr=id==='gallery'?content.gallery.items:content[id];arr[i]={...arr[i],...readBox(box)};await saveDraft();showSection(id)}
+async function deleteItem(key){const [id,idx]=key.split(':');if(!confirm('Delete this item?'))return;const arr=id==='gallery'?content.gallery.items:content[id];arr.splice(Number(idx),1);await saveDraft();showSection(id)}
+async function moveItem(key,dir){const [id,idx]=key.split(':');const arr=id==='gallery'?content.gallery.items:content[id];const i=Number(idx),j=i+Number(dir);if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];await saveDraft();showSection(id)}
+
 async function init(){
   if(!client){q('#loginMsg').innerHTML='<div class="error">Supabase is not configured yet. You need to fill in config.js before the real admin can work.</div>';return;}
   const {data:{session}}=await client.auth.getSession();
@@ -112,8 +213,19 @@ async function init(){
 q('#loginForm').onsubmit=async(e)=>{e.preventDefault();hideMessage();const email=q('#email').value.trim(),password=q('#password').value;const {error}=await client.auth.signInWithPassword({email,password});if(error){q('#loginMsg').innerHTML=`<div class="error">${esc(error.message)}</div>`;return}try{if(!(await ensureAdmin())){await client.auth.signOut();throw new Error('This account is not authorized as an admin yet. Ask the primary admin to add your Auth user ID to admin_users.')}q('#login').classList.add('hidden');q('#app').classList.remove('hidden');q('#sideUser').innerHTML=`Signed in as<br><b>${esc(user.email||'')}</b>`;menu();await loadContent();showSection('hero')}catch(err){await client.auth.signOut();q('#app').classList.add('hidden');q('#login').classList.remove('hidden');q('#loginMsg').innerHTML=`<div class="error">${esc(err.message)}</div>`}}
 q('#logoutBtn').onclick=async()=>{await client.auth.signOut();location.reload()};
 q('#publishBtn').onclick=async()=>{try{await publish()}catch(e){showMessage(e.message,'error')}};
-document.addEventListener('click',async e=>{try{const n=e.target.closest('[data-nav]');if(n)showSection(n.dataset.nav);const a=e.target.closest('[data-add]');if(a)await addItem(a.dataset.add);const ed=e.target.closest('[data-edit]');if(ed)q(`#edit-${ed.dataset.edit.replace(':','-')}`).classList.toggle('hidden');const sv=e.target.closest('[data-save]');if(sv)await saveSection(sv.dataset.save);const si=e.target.closest('[data-save-item]');if(si)await saveItem(si.dataset.saveItem);const de=e.target.closest('[data-delete]');if(de)await deleteItem(de.dataset.delete);const mv=e.target.closest('[data-move]');if(mv){const [id,i,d]=mv.dataset.move.split(':');await moveItem(`${id}:${i}`,d)}}catch(err){showMessage(err.message,'error')}});
-const origShowSection=showSection; showSection=function(id){origShowSection(id);setTimeout(wireImages,0)};
+document.addEventListener('click',async e=>{try{
+  const n=e.target.closest('[data-nav]');if(n)showSection(n.dataset.nav);
+  const a=e.target.closest('[data-add]');if(a)await addItem(a.dataset.add);
+  const ac=e.target.closest('[data-add-cat]');if(ac)addCategory();
+  const cr=e.target.closest('[data-cat-rename]');if(cr)renameCategory(Number(cr.dataset.catRename));
+  const cd=e.target.closest('[data-cat-delete]');if(cd)deleteCategory(Number(cd.dataset.catDelete));
+  const cm=e.target.closest('[data-cat-move]');if(cm){const [i,d]=cm.dataset.catMove.split(':');moveCategory(Number(i),Number(d));}
+  const ed=e.target.closest('[data-edit]');if(ed)q(`#edit-${ed.dataset.edit.replace(':','-')}`).classList.toggle('hidden');
+  const sv=e.target.closest('[data-save]');if(sv)await saveSection(sv.dataset.save);
+  const si=e.target.closest('[data-save-item]');if(si)await saveItem(si.dataset.saveItem);
+  const de=e.target.closest('[data-delete]');if(de)await deleteItem(de.dataset.delete);
+  const mv=e.target.closest('[data-move]');if(mv){const [id,i,d]=mv.dataset.move.split(':');await moveItem(`${id}:${i}`,d)}
+}catch(err){showMessage(err.message,'error')}});
 init();
 </script>
 </body></html>
