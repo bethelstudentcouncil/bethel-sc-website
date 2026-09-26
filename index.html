@@ -8,9 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="js/supabase-client.js"></script>
 <style>
 :root{
   --navy:#0B1D3A;
@@ -234,6 +231,9 @@ section{padding:120px 0}
 .t-stars{color:var(--gold);margin-top:26px;font-size:20px;letter-spacing:4px}
 .t-name{margin-top:18px;color:#C9D3E8;font-weight:700}
 .t-name span{display:block;font-weight:500;font-size:13px;color:#8493B8}
+.t-dots{display:flex;gap:9px;justify-content:center;margin-top:30px}
+.t-dots button{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3)}
+.t-dots button.active{background:var(--gold);width:22px;border-radius:6px}
 
 /* ---------- Social ---------- */
 .social{background:var(--paper);text-align:center}
@@ -302,11 +302,7 @@ footer{background:var(--navy);color:#B9C4E0;padding:80px 0 30px;position:relativ
 <header id="site-header">
   <div class="wrap navbar">
     <a href="#home" class="brand">
-      <span id="navLogoWrap"><svg class="brand-mark" viewBox="0 0 44 44" fill="none">
-        <circle cx="22" cy="22" r="21" fill="#0B1D3A" stroke="#F0B429" stroke-width="1.4"/>
-        <path d="M22 12c-4 3-9 4-13 3 1 6 5 10 13 15 8-5 12-9 13-15-4 1-9 0-13-3z" fill="#F0B429"/>
-        <circle cx="22" cy="20" r="2.4" fill="#0B1D3A"/>
-      </svg></span>
+      <span id="navLogoWrap"><img src="logo.png" class="brand-mark" style="border-radius:50%;object-fit:cover" alt="Bethel International School logo"></span>
       <span class="brand-text">Bethel International School<span>Student Council</span></span>
     </a>
     <nav class="nav-links">
@@ -453,9 +449,9 @@ footer{background:var(--navy);color:#B9C4E0;padding:80px 0 30px;position:relativ
 <section class="programs" id="programs">
   <div class="wrap">
     <div class="section-head reveal">
-      <span class="tag">What we run</span>
-      <h2>Programs & initiatives</h2>
-      <p>The four pillars behind everything the council organizes.</p>
+      <span class="tag">Academic programs</span>
+      <h2>Every stage of a Bethel education</h2>
+      <p>From Preschool to Senior High — one campus, one community, every step of the way.</p>
     </div>
     <div class="programs-grid" id="programsGrid"></div>
   </div>
@@ -467,6 +463,7 @@ footer{background:var(--navy);color:#B9C4E0;padding:80px 0 30px;position:relativ
     <p class="quote reveal" id="testimonialQuote">Running for Student Council taught me more about actually listening to people than any class ever did. Bethel gave us the room to try, mess up, and get better at it.</p>
     <div class="t-stars" id="testimonialStars">★★★★★</div>
     <div class="t-name" id="testimonialName">Officer Name<span id="testimonialRole">Grade 11, Peace Officer</span></div>
+    <div class="t-dots" id="testimonialDots"></div>
   </div>
 </section>
 
@@ -501,7 +498,7 @@ footer{background:var(--navy);color:#B9C4E0;padding:80px 0 30px;position:relativ
   <div class="wrap">
     <div class="footer-grid">
       <div class="footer-brand">
-        <a href="#home" class="brand"><span id="footerLogoWrap"><svg class="brand-mark" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="21" fill="#132c58" stroke="#F0B429" stroke-width="1.4"/><path d="M22 12c-4 3-9 4-13 3 1 6 5 10 13 15 8-5 12-9 13-15-4 1-9 0-13-3z" fill="#F0B429"/><circle cx="22" cy="20" r="2.4" fill="#0B1D3A"/></svg></span><span class="brand-text">Bethel SC<span style="color:#F0B429">Student Council</span></span></a>
+        <a href="#home" class="brand"><span id="footerLogoWrap"><img src="logo.png" class="brand-mark" style="border-radius:50%;object-fit:cover" alt="Bethel International School logo"></span><span class="brand-text">Bethel SC<span style="color:#F0B429">Student Council</span></span></a>
         <p>The official student council of Bethel International School, Palo, Leyte. Bethel @25 — faithful then, faithful still.</p>
         <div class="footer-social">
           <a id="footerFb" href="https://www.facebook.com/bethel.IS.sc" target="_blank" rel="noopener">f</a>
@@ -528,13 +525,10 @@ footer{background:var(--navy);color:#B9C4E0;padding:80px 0 30px;position:relativ
   </div>
 </footer>
 <script>
-const client=window.bethelSupabase;
 function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
-/* ---------- fallback sample content (shown until real content is published) ---------- */
-function defaultContent(){
-  return {
-    branding:{logo:''},
+/* ---------- the site's real content, edited directly here ---------- */
+const SITE_CONTENT={
     hero:{headlineMain:'BETHEL',headlineAccent:'@25',subtext:'Faithful then, faithful still.',copy:"Twenty-five years of Bethel students stepping up — organizing events, representing classmates, and keeping school spirit loud. This is where it all happens."},
     about:{mission:'Bethel International School aims to develop global citizens who are competent, responsible, possessing an international perspective and equipped with values grounded on biblical truths to serve as leaders and models of change in an interdependent world.',vision:'Preparing Godly leaders for the modern world.',body1:'The Bethel International School Student Council represents the student body across Preschool through Senior High. We plan events, carry student concerns to the administration, and build the kind of school spirit that makes Bethel feel like home.',body2:'Every officer here was elected by students, for students — and every program we run starts with one question: what does Bethel need this year?',features:['Represents every grade level, Preschool to SHS','Plans school-wide events and activities','Runs outreach and community programs','Keeps students informed through news and updates'],photo:''},
     officers:[
@@ -572,36 +566,15 @@ function defaultContent(){
       ]
     },
     programs:[
-      {name:'Student Voice',icon:'🗳️',description:'Surveys, suggestion drives, and open forums that put real student concerns in front of the administration.'},
-      {name:'Leadership',icon:'🎯',description:'Training and mentorship for class officers and future SC candidates, starting as early as Grade 7.'},
-      {name:'Community',icon:'🤝',description:'Outreach drives, coastal cleanups, and partnerships with local organizations around Palo.'},
-      {name:'School Spirit',icon:'🎉',description:'Intramurals, spirit weeks, and the traditions that make Bethel feel like Bethel.'}
+      {name:'Preschool',icon:'🧸',description:'A warm, play-based start where young learners build confidence, curiosity, and their first friendships.'},
+      {name:'Elementary',icon:'✏️',description:'A strong academic foundation paired with character formation, from Grade 1 through Grade 6.'},
+      {name:'Junior High School',icon:'📚',description:'Grades 7 to 10 — broadening subjects, growing independence, and early leadership opportunities.'},
+      {name:'Senior High School',icon:'🎓',description:'Grades 11 and 12, preparing students for college, careers, and life beyond Bethel.'}
     ],
-    testimonial:{quote:'Running for Student Council taught me more about actually listening to people than any class ever did. Bethel gave us the room to try, mess up, and get better at it.',name:'Officer Name',role:'Grade 11, Peace Officer',rating:5},
+    testimonials:[{quote:'Running for Student Council taught me more about actually listening to people than any class ever did. Bethel gave us the room to try, mess up, and get better at it.',name:'Officer Name',role:'Grade 11, Peace Officer',rating:5}],
     contact:{phone:'+1 559-909-3455',email:'secretary@bethel.edu.ph',address:'Tabuan National Hwy, Palo, Leyte',mapLink:'https://www.google.com/maps?ll=11.187774,125.001293&z=14&t=m&hl=en-US&gl=US&mapclient=embed&cid=16631209661483525416',facebook:'https://www.facebook.com/bethel.IS.sc',instagram:'https://www.instagram.com/bethel.sc/?hl=en'}
-  };
-}
+};
 
-/* merge published data over defaults so any field the admin hasn't touched yet still shows something */
-function merge(base,extra){
-  if(!extra||typeof extra!=='object') return base;
-  const out=Array.isArray(base)?[]:{...base};
-  for(const k in base){
-    if(extra[k]===undefined) continue;
-    if(Array.isArray(base[k])) out[k]=Array.isArray(extra[k])?extra[k]:base[k];
-    else if(typeof base[k]==='object'&&base[k]!==null) out[k]=merge(base[k],extra[k]);
-    else out[k]=extra[k];
-  }
-  return out;
-}
-
-function renderBranding(b){
-  if(b.logo){
-    const img=`<img src="${esc(b.logo)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`;
-    document.getElementById('navLogoWrap').innerHTML=img;
-    document.getElementById('footerLogoWrap').innerHTML=img;
-  }
-}
 function renderHero(h){
   document.getElementById('heroHeadline').innerHTML=esc(h.headlineMain)+' <em>'+esc(h.headlineAccent)+'</em>';
   document.getElementById('heroSubtext').textContent=h.subtext;
@@ -719,12 +692,31 @@ function renderPrograms(list){
       <p>${esc(p.description)}</p>
     </div>`).join('');
 }
-function renderTestimonial(t){
+let testimonialList=[]; let testimonialIdx=0; let testimonialTimer=null;
+function showTestimonialSlide(i){
+  const t=testimonialList[i]; if(!t) return;
+  testimonialIdx=i;
   document.getElementById('testimonialQuote').textContent=t.quote;
   document.getElementById('testimonialStars').textContent='★'.repeat(Math.max(1,Math.min(5,Number(t.rating)||5)));
   document.getElementById('testimonialName').childNodes[0].textContent=t.name+' ';
   document.getElementById('testimonialRole').textContent=t.role;
+  document.querySelectorAll('#testimonialDots button').forEach((b,bi)=>b.classList.toggle('active',bi===i));
 }
+function renderTestimonial(list){
+  testimonialList=(list&&list.length)?list:[{quote:'',name:'',role:'',rating:5}];
+  document.getElementById('testimonialDots').innerHTML=testimonialList.length>1
+    ? testimonialList.map((_,i)=>`<button data-t-dot="${i}" class="${i===0?'active':''}" aria-label="Show testimonial ${i+1}"></button>`).join('')
+    : '';
+  showTestimonialSlide(0);
+  if(testimonialTimer) clearInterval(testimonialTimer);
+  if(testimonialList.length>1){
+    testimonialTimer=setInterval(()=>showTestimonialSlide((testimonialIdx+1)%testimonialList.length),6000);
+  }
+}
+document.addEventListener('click',e=>{
+  const dot=e.target.closest('[data-t-dot]');
+  if(dot){showTestimonialSlide(Number(dot.dataset.tDot));if(testimonialTimer)clearInterval(testimonialTimer);}
+});
 function renderContact(c){
   document.getElementById('contactEmail').textContent=c.email;
   document.getElementById('contactPhone').textContent=c.phone;
@@ -740,7 +732,6 @@ function renderContact(c){
 }
 
 function renderAll(content){
-  renderBranding(content.branding);
   renderHero(content.hero);
   renderAbout(content.about);
   renderOfficers(content.officers);
@@ -748,7 +739,7 @@ function renderAll(content){
   renderEvents(content.events);
   renderGallery(content.gallery);
   renderPrograms(content.programs);
-  renderTestimonial(content.testimonial);
+  renderTestimonial(content.testimonials);
   renderContact(content.contact);
   // (re)apply scroll-reveal to freshly injected elements
   document.querySelectorAll('.reveal').forEach(el=>{
@@ -760,17 +751,6 @@ const revealObserver=new IntersectionObserver(entries=>entries.forEach(e=>{
   if(e.isIntersecting){e.target.classList.add('in');revealObserver.unobserve(e.target)}
 }),{threshold:.15});
 
-async function loadPublished(){
-  const fallback=defaultContent();
-  renderAll(fallback);
-  if(!client) return;
-  try{
-    const {data,error}=await client.from('site_content').select('published').eq('id',1).single();
-    if(error||!data||!data.published) return;
-    renderAll(merge(fallback,data.published));
-  }catch(e){ /* keep sample content visible if Supabase is unreachable */ }
-}
-
 // header scroll state
 const header=document.getElementById('site-header');
 window.addEventListener('scroll',()=>header.classList.toggle('scrolled',window.scrollY>30));
@@ -780,7 +760,7 @@ const burger=document.getElementById('burgerBtn'), panel=document.getElementById
 burger.onclick=()=>panel.classList.toggle('open');
 panel.querySelectorAll('a').forEach(a=>a.onclick=()=>panel.classList.remove('open'));
 
-loadPublished();
+renderAll(SITE_CONTENT);
 </script>
 </body>
 </html>
